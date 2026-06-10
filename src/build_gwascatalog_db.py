@@ -14,9 +14,9 @@ __version__ = "0.9.1"
 DOWNLOAD_NEWEST = True
 
 # Versions of ontologies and the resulting search database
-EFO_VERSION = "3.62.0"
+EFO_VERSION = "3.90.0"
 UBERON_VERSION = "2024-01-18"
-SEARCH_DB_VERSION = "0.10.0"
+SEARCH_DB_VERSION = "0.11.0"
 
 # Input tables from GWAS Catalog
 GWASCATALOG_STUDIES_TABLE_URL = "https://www.ebi.ac.uk/gwas/api/search/downloads/studies_alternative"
@@ -141,8 +141,8 @@ if __name__ == "__main__":
     studies_df = get_gwascatalog_studies_table()  # get studies metadata table
     studies_download_timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
-    print("Downloading GWAS Catalog Associations table...")
-    associations_df = get_gwascatalog_associations_table()  # get associations table
+    print("Loading GWAS Catalog Associations table from local file...")
+    associations_df = get_gwascatalog_associations_table(download_newest=False)  # API endpoint is defunct; use local file
     associations_download_timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
     version_info_df = get_version_info_table(studies_download_timestamp, associations_download_timestamp)
@@ -163,13 +163,15 @@ if __name__ == "__main__":
     start = time.time()
     from build_database import build_database
     build_database(metadata_df=studies_df,
+                   dataset_name=DATASET_NAME,
+                   ontology_name="EFO",
                    output_database_filepath=OUTPUT_DATABASE_FILEPATH,
                    ontology_mappings_df=ontology_mappings,
                    compute_mappings=True,
                    include_cross_ontology_references_table=True,
                    min_mapping_score=0.1,
                    max_mappings=1,
-                   ontology_url=f"http://www.ebi.ac.uk/efo/releases/v{EFO_VERSION}/efo.owl",
+                   ontology_url=os.path.join(RESOURCES_FOLDER, "efo.owl"),
                    resource_col=OUTPUT_DB_TRAIT_COLUMN,
                    resource_id_col=OUTPUT_DB_STUDY_ID_COLUMN,
                    ontology_term_col=MAPPED_TRAIT_COLUMN,

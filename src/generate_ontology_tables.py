@@ -59,10 +59,13 @@ def get_semsql_tables_for_ontology(ontology_url, ontology_name, tables_output_fo
     db_gz_file = db_file + ".gz"
     if not os.path.exists(db_output_folder):
         os.makedirs(db_output_folder)
-    print(f"Downloading database file for {ontology_name} from {ontology_url}...")
-    urllib.request.urlretrieve(ontology_url, db_gz_file)
-    with gzip.open(db_gz_file, "rb") as file_in, open(db_file, "wb") as file_out:
-        shutil.copyfileobj(file_in, file_out)
+    if os.path.exists(db_file):
+        print(f"Using cached database file for {ontology_name} at {db_file}")
+    else:
+        print(f"Downloading database file for {ontology_name} from {ontology_url}...")
+        urllib.request.urlretrieve(ontology_url, db_gz_file)
+        with gzip.open(db_gz_file, "rb") as file_in, open(db_file, "wb") as file_out:
+            shutil.copyfileobj(file_in, file_out)
     print(f"Generating tables for {ontology_name}...")
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
@@ -219,7 +222,10 @@ def get_curie_id_for_term(term):
 
 
 def _get_curie(term):
-    curie = bioregistry.curie_from_iri(term)
+    try:
+        curie = bioregistry.curie_from_iri(term)
+    except (TypeError, ValueError):
+        curie = None
     if curie is None:
         if "http://dbpedia.org" in term:
             return "DBR:" + term.rsplit('/', 1)[1]
